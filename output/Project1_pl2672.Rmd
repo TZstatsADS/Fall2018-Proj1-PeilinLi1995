@@ -133,7 +133,7 @@ The "Affection" category is still the most frequent one in the barplot, almost 3
 
 <center> ![](../figs/Family.jpg) </center>
 
-><font size=6>**Conclusion**</font>
+><font size=6>**Conclusions**</font>
 
 <font size=3>
 By analyzing the HappyDB dataset, we explore the connection between happiness and potential factors, our conclusions are below:
@@ -149,5 +149,7 @@ By analyzing the HappyDB dataset, we explore the connection between happiness an
 ><font size=6>**Reference**</font>
 
 <font size=3>
-1. Family image: From<http://estilcampjoliu.cat/wp-content/uploads/2016/09/Family.jpg>   
+1. Family image: From <http://estilcampjoliu.cat/wp-content/uploads/2016/09/Family.jpg>
+
+2. Wordcloud: From <https://dzone.com/articles/building-word-cloud-with-r>
  </front>
