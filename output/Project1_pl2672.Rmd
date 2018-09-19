@@ -1,0 +1,153 @@
+---
+ title: <center> What makes people happy? </center>
+---
+
+```{r,echo=FALSE}
+# set path for data file
+setwd("/Users/24796/Documents/GitHub/Fall2018-Proj1-PeilinLi1995/output")
+```
+
+
+<center> ![](../figs/title.jpeg) </center>
+<center> <font size=3>**Are you happy today?**</font> </center> 
+
+<font size=3>
+Happy is a natural human mood produced in our daily life. However, do you still remember why you are happy? In this work, writing down happy moments can help us understand what makes us happy. HappyDB is a corpus of 100,000 crowd-sourced happy moments. In this report, we are going to use natural language processing and text mining to explore the world of text and happy.
+</font>
+
+```{r,warning=FALSE,error=FALSE,echo=FALSE,message=FALSE}
+# load libraries
+library("rvest")
+library("tibble")
+library("qdap")
+library("sentimentr")
+library("gplots")
+library("dplyr")
+library("tm")
+library("syuzhet")
+library("factoextra")
+library("scales")
+library("RColorBrewer")
+library("RANN")
+library("plotly")
+library("topicmodels")
+library("beeswarm")
+library("cluster") 
+library("tidytext")
+library("wordcloud")
+library("RColorBrewer")
+library("ggplot2")
+library("gcookbook")
+library('shiny')
+```
+
+```{r,warning=FALSE,include=FALSE,echo=FALSE}
+# load HappyDB data
+HappyDB <- read.csv("../data/processed_moments.csv", header = TRUE)
+HappyDB$text_wordcount <- word_count(HappyDB$text)
+```
+
+><font size=6>**Number of condensed words**</font>
+<font size=3>
+
+Since people may not write same number of sentences to describe the event that makes them happy so it is important to check whether the number of words in text condensed from different numbers of sentences really differ.
+
+Text data with 4 or more sentences are too rare so here we exclude them. In 3 boxplots, more sentences produce more condensed words, this may help produce more precise predictions. It is noteworthy that there are lots of outliers for all 3 groups, but outliers here represent more text words, which may also lead to more precise predictions, we can leave them in the dataset. 
+<font>
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+div(plot_ly(type = "box") %>%
+      add_boxplot(y=HappyDB[HappyDB$num_sentence == 1,]$text_wordcount,
+                  marker = list(color = 'red',alpha=0.5),
+                  line = list(color = 'red',alpha=0.5),
+                  name='One sentence') %>%
+      add_boxplot(y=HappyDB[HappyDB$num_sentence == 2,]$text_wordcount,
+                  marker = list(color = 'blue',alpha=0.5),
+                  line = list(color = 'blue',alpha=0.5),
+                  name='Two sentence') %>%
+      add_boxplot(y=HappyDB[HappyDB$num_sentence == 3,]$text_wordcount,
+                  marker = list(color = 'green',alpha=0.5),
+                  line = list(color = 'green',alpha=0.5),
+                  name='Three sentence'),
+      align='center')
+```
+
+><font size=6>**Topic modeling**</font>
+
+><font size=3>**Wordcloud**</font>
+
+Wordcloud is a tool gives us a direct knowledge of what usually makes people happy by listing words from the mostly used one to the rarely used one. Here we have an overview of the condensed text words:
+
+```{r, fig.height=5, fig.width=5,warning=FALSE}
+# Interest condensed text words
+library(wordcloud)
+
+HappyDBtext.Corpus <- Corpus(VectorSource(HappyDB$text))
+HappyDBtext.clean <- tm_map(HappyDBtext.Corpus, PlainTextDocument)
+HappyDBtext.clean <- tm_map(HappyDBtext.Corpus,tolower)
+HappyDBtext.clean <- tm_map(HappyDBtext.clean ,removeNumbers)
+HappyDBtext.clean <- tm_map(HappyDBtext.clean ,removeWords,stopwords("english"))
+HappyDBtext.clean <- tm_map(HappyDBtext.clean ,removePunctuation)
+HappyDBtext.clean <- tm_map(HappyDBtext.clean ,stripWhitespace)
+HappyDBtext.clean <- tm_map(HappyDBtext.clean ,stemDocument)
+
+wordcloud(HappyDBtext.clean, min.freq = 1,
+          max.words=100, random.order=FALSE, rot.per=0.4, 
+          colors=brewer.pal(10, "Dark2"), align='center')
+```
+
+From this wordcloud, social relationship is the most important thing that makes people happy in their lifes. Words like "Friend", "Family", "Love", "Husband", "Wife", "Son", "Daughter" and so on show the happiness can be produced between people when they live together and have stable relationship. This is quite identical with our life experiences, when we have interactions with people we love, we usually feel happy and get a sense of satisfaction.
+
+But how about the cleaned sentences before condensation? Why don't we use them directly as they are cleaned ones? Here, we try to build the wordcloud of data in categrocy "cleaned_hm":
+
+```{r, fig.height=5, fig.width=5,warning=FALSE}
+# Interest cleaned_hm words
+
+HappyDBcleaned.Corpus <- Corpus(VectorSource(HappyDB$cleaned_hm))
+HappyDBcleaned.clean <- tm_map(HappyDBcleaned.Corpus, PlainTextDocument)
+HappyDBcleaned.clean <- tm_map(HappyDBcleaned.Corpus,tolower)
+HappyDBcleaned.clean <- tm_map(HappyDBcleaned.clean ,removeNumbers)
+HappyDBcleaned.clean <- tm_map(HappyDBcleaned.clean ,removeWords,stopwords("english"))
+HappyDBcleaned.clean <- tm_map(HappyDBcleaned.clean ,removePunctuation)
+HappyDBcleaned.clean <- tm_map(HappyDBcleaned.clean ,stripWhitespace)
+HappyDBcleaned.clean <- tm_map(HappyDBcleaned.clean ,stemDocument)
+
+wordcloud(HappyDBcleaned.clean, min.freq = 1,
+          max.words=100, random.order=FALSE, rot.per=0.4, 
+          colors=brewer.pal(10, "Set1"), align='center')
+```
+
+Compared with the wordcloud based on condensed text, this one includes some words that are too common to summary its meaning. The reanson why we still need to condense text after cleaning is to find core words much efficiently.
+
+><font size=3>**Category prediction**</font>
+
+As most of people's sentences are marked with NA in their "ground truth categrory" but have their "predicted category" filled, we'd like to compare these category predictions and see how they cause people happy in daily life.
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+barplot(table(HappyDB$predicted_category), las = 3,
+        col ="lightblue", main ="Category prediction comparison",
+        ylab = "Category frequencies")
+```
+
+The "Affection" category is still the most frequent one in the barplot, almost 35000 pieces of records. An surprising finding is that the "Achievement" category has a large amount of records, which is not so obvious in the wordcloud plot. Therefore, we have to say the sense of achievement is another important source of happiness as people feel satisfied when their work get paid. For other categories, they are rather rare compared with "Affction" and "Achievement" but they represent people's colorful life.
+
+<center> ![](../figs/Family.jpg) </center>
+
+><font size=6>**Conclusion**</font>
+
+<font size=3>
+By analyzing the HappyDB dataset, we explore the connection between happiness and potential factors, our conclusions are below:
+
++ Generally, longer sentences produce more condensed text words as people think. This is true but in some situations, sentences of different lengths may produce similar number of condensed text words. This tells us no longer how long the sentence is, people's happy feeling can be reflected by a range of core words.
+
++ Wordcloud is processsed to dig out the cause of happiness. According to the words like "Friend", "Family", "Love" and so on, the social relationship plays an crucial role in bringing happiness. This is also approved by the barplot in which the "Affection" category has the highest frequency.
+
++ However, the "achievement" category is not revealed obviously in our wordclouds. This may be caused by the various choices of key words when people describe their achievements, comparing to relatively limited key words used in the "Affection" category.
+
++ In a word, we can draw that "Achievement" and "Affection" categories are main causes of people's happiness while other categories such as "Bounding", "Nature" and "Exercise" play some roles in making people happy. 
+
+><font size=6>**Reference**</font>
+
+<font size=3>
+1. Family image: From<http://estilcampjoliu.cat/wp-content/uploads/2016/09/Family.jpg>   
+ </front>
