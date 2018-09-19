@@ -13,6 +13,7 @@ Term: Fall 2018
 + This project is conducted by Peilin Li (pl2672).
 
 + Project summary: 
+
 In this study, we focus on the connection between happiness and its causes. Natural language processing and text mining tools are applied to explore HappyDB dataset. From wordcloud, we find severeal key words that reveal one main cause of happiness.
 
 Once we summary each categories, the frequency of the "Achievement" category is similar to the "Affection" category and both of them are much higher than other 7 categories, which indicates they playing main roles in making people happy. 
